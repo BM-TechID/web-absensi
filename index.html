@@ -249,12 +249,59 @@
     }
 
     // --- LOGIKA KAMERA ---
+    // --- UPDATE: FUNGSI KAMERA LEBIH KUAT (COMPATIBILITY MODE) ---
     async function startCamera() {
+        const videoEl = document.getElementById('videoElement');
+        const errorBox = document.getElementById('scanText'); // Kita pakai text status buat info error
+
+        // 1. Cek Dukungan Browser
+        if (!navigator.mediaDevices && !navigator.webkitGetUserMedia && !navigator.mozGetUserMedia) {
+            alert("Browser ini tidak mendukung akses kamera. Coba gunakan Chrome/Safari terbaru.");
+            return;
+        }
+
+        // 2. Polyfill untuk Browser Lama (agar tidak error 'undefined')
+        if (!navigator.mediaDevices) {
+            navigator.mediaDevices = {};
+        }
+        if (!navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia = function(constraints) {
+                var getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+                if (!getUserMedia) {
+                    return Promise.reject(new Error('getUserMedia is not implemented'));
+                }
+                return new Promise(function(resolve, reject) {
+                    getUserMedia.call(navigator, constraints, resolve, reject);
+                });
+            }
+        }
+
+        // 3. Request Kamera
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-            document.getElementById('videoElement').srcObject = stream;
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'user', // Kamera depan
+                    width: { ideal: 640 },
+                    height: { ideal: 480 }
+                },
+                audio: false
+            });
+            
+            videoEl.srcObject = stream;
+            
+            // Perlu play manual di beberapa browser
+            videoEl.onloadedmetadata = function(e) {
+                videoEl.play();
+            };
+
         } catch (e) {
-            alert("Gagal akses kamera: " + e.message);
+            console.error("Error Kamera:", e);
+            // Tampilkan pesan error yang jelas ke layar user
+            if (window.location.protocol === 'file:') {
+                 alert("ERROR: Kamera tidak bisa jalan jika file dibuka langsung (file://). Mohon upload ke hosting (Netlify) atau gunakan Localhost.");
+            } else {
+                 alert("Gagal Akses Kamera: " + e.name + ". Pastikan izin kamera diberikan.");
+            }
         }
     }
 
