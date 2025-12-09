@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HRIS - PT. SUMBER SAWINDO KENCANA</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <style>
+        /* --- 1. SETTING UTAMA --- */
+        :root {
+            --primary: #15803d; /* Hijau Sawit */
+            --accent: #4ade80;  /* Hijau Neon */
+            --error: #ef4444;
+            --bg: #f3f4f6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+
+        body {
+            background-color: var(--bg);
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .app-container {
+            width: 100%; height: 100%; background: white;
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+        }
+
+        /* Mode Laptop/Tablet */
+        @media (min-width: 768px) {
+            .app-container {
+                width: 400px; height: 90vh; border-radius: 20px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid #ddd;
+            }
+            body { background-color: #e5e7eb; }
+        }
+
+        /* --- HALAMAN --- */
+        .page {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column;
+        }
+        .page.active { display: flex; z-index: 10; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* --- LOGIN PAGE --- */
+        #loginPage {
+            background: #f0fdf4; padding: 30px; justify-content: center; text-align: center;
+        }
+        .logo-icon { font-size: 5rem; color: var(--primary); margin-bottom: 10px; }
+        .company-name {
+            font-size: 1.1rem; font-weight: 800; color: var(--primary);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 30px;
+        }
+        .input-box { margin-bottom: 15px; text-align: left; }
+        .input-box label { font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px; font-weight: 600; }
+        .input-box input {
+            width: 100%; padding: 14px; border: 1px solid #ccc;
+            border-radius: 8px; font-size: 1rem; outline: none; transition: 0.3s;
+        }
+        .input-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.1); }
+        
+        .btn-main {
+            width: 100%; padding: 15px; background: var(--primary);
+            color: white; border: none; border-radius: 8px;
+            font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 15px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .btn-main:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        .error-msg {
+            color: var(--error); font-size: 0.9rem; margin-top: 10px;
+            display: none; background: #fee2e2; padding: 10px; border-radius: 6px;
+        }
+
+        /* --- SCANNER PAGE --- */
+        #scanPage { background: black; align-items: center; justify-content: center; }
+        video { position: absolute; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        
+        .scan-overlay {
+            position: absolute; width: 100%; height: 100%; z-index: 5;
+            background: radial-gradient(circle, transparent 35%, rgba(0,0,0,0.85) 80%);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .face-frame {
+            width: 280px; height: 360px; border: 3px solid rgba(255,255,255,0.6);
+            border-radius: 24px; position: relative; overflow: hidden; transition: 0.3s;
+        }
+        .laser {
+            width: 100%; height: 3px; background: var(--accent);
+            box-shadow: 0 0 15px var(--accent); position: absolute; top: 0;
+            display: none; animation: scanMove 1.5s infinite ease-in-out;
+        }
+        @keyframes scanMove { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+        .scan-status {
+            margin-top: 25px; color: white; font-weight: 600; font-size: 1.1rem; min-height: 25px;
+        }
+        .btn-capture {
+            position: absolute; bottom: 40px; width: 75px; height: 75px;
+            background: #fff; border-radius: 50%; border: 6px solid rgba(255,255,255,0.3);
+            cursor: pointer; z-index: 10;
+        }
+
+        /* --- DASHBOARD PAGE --- */
+        #dashboardPage { background: #f8fafc; overflow-y: auto; }
+        .dash-head { background: white; padding: 25px 20px 15px; border-bottom: 1px solid #eee; }
+        .section { padding: 20px 20px 5px; font-size: 0.8rem; font-weight: bold; color: #64748b; text-transform: uppercase; }
+        
+        /* Kartu Hari Ini */
+        .card-today {
+            background: white; margin: 10px 20px; padding: 20px;
+            border-radius: 12px; border-left: 5px solid var(--primary);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: flex; justify-content: space-between;
+        }
+        .pill { background: #dcfce7; color: #166534; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; }
+
+        /* List History */
+        .hist-list { padding: 0 20px 40px; }
+        .hist-item {
+            background: white; padding: 15px; margin-bottom: 8px; border-radius: 10px;
+            display: flex; justify-content: space-between; align-items: center; border: 1px solid #f1f5f9;
+        }
+        .t-in { color: var(--primary); font-weight: 700; }
+        .t-out { color: #ef4444; font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <div id="loginPage" class="page active">
+        <span class="material-icons logo-icon">forest</span>
+        <div class="company-name">PT. Sumber Sawindo Kencana</div>
+        
+        <div style="width: 100%; text-align: left;">
+            <div class="input-box">
+                <label>NIK Karyawan</label>
+                <input type="number" id="inpNik" placeholder="Masukkan NIK (Cth: 2025001)">
+            </div>
+            <div class="input-box">
+                <label>PIN</label>
+                <input type="password" id="inpPin" placeholder="Masukkan PIN (Cth: 123456)">
+            </div>
+            
+            <div id="loginError" class="error-msg">
+                <span class="material-icons" style="font-size:16px; vertical-align:middle; margin-right:5px;">error</span>
+                NIK atau PIN tidak ditemukan!
+            </div>
+
+            <button class="btn-main" id="btnLogin" onclick="handleLogin()">
+                MASUK
+            </button>
+        </div>
+        <p style="margin-top:20px; font-size:0.8rem; color:#888;">Versi Aplikasi v3.5 (Prod)</p>
+    </div>
+
+    <div id="scanPage" class="page">
+        <video id="videoElement" autoplay playsinline></video>
+        <div class="scan-overlay">
+            <div class="face-frame" id="frameBox">
+                <div class="laser"></div>
+            </div>
+            <div class="scan-status" id="statusText">Posisikan wajah Anda...</div>
+            <button class="btn-capture" id="btnSnap" onclick="doScan()"></button>
+        </div>
+    </div>
+
+    <div id="dashboardPage" class="page">
+        <div class="dash-head">
+            <h2 style="color:#1f2937; font-size:1.3rem;">Halo, <span id="userNameDisplay">User</span></h2>
+            <p style="color:#666; font-size:0.9rem; margin-top:5px;">Divisi Panen & Perawatan</p>
+        </div>
+
+        <div class="section">Status Hari Ini</div>
+        <div class="card-today">
+            <div>
+                <div style="color:#888; font-size:0.8rem;">Jam Masuk</div>
+                <div style="font-size:1.6rem; font-weight:800; color:#333;" id="clockInNow">--:--</div>
+            </div>
+            <div style="text-align:right;">
+                <div class="pill">VERIFIED</div>
+                <div style="color:#888; font-size:0.8rem; margin-top:5px;">Normal Shift</div>
+            </div>
+        </div>
+
+        <div class="section">Riwayat 7 Hari Terakhir</div>
+        <div class="hist-list" id="historyContainer">
+            </div>
+
+        <div style="padding: 20px;">
+            <button class="btn-main" style="background:#ef4444;" onclick="location.reload()">LOGOUT</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- KONFIGURASI USER YANG VALID ---
+    const VALID_USER = {
+        nik: "231126",
+        pin: "123456",
+        name: "Suranto"
+    };
+
+    // --- LOGIKA LOGIN ---
+    function handleLogin() {
+        const nikInput = document.getElementById('inpNik').value;
+        const pinInput = document.getElementById('inpPin').value;
+        const btn = document.getElementById('btnLogin');
+        const errorBox = document.getElementById('loginError');
+
+        // Reset Error
+        errorBox.style.display = 'none';
+
+        if(!nikInput || !pinInput) {
+            errorBox.innerHTML = "NIK dan PIN harus diisi!";
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        // Efek Loading Tombol
+        btn.disabled = true;
+        btn.innerHTML = "Memverifikasi...";
+
+        setTimeout(() => {
+            // Cek Kesesuaian Data
+            if(nikInput === VALID_USER.nik && pinInput === VALID_USER.pin) {
+                // Sukses
+                document.getElementById('userNameDisplay').innerText = VALID_USER.name;
+                switchPage('scanPage');
+                startCamera();
+            } else {
+                // Gagal
+                errorBox.innerHTML = "❌ NIK atau PIN salah!";
+                errorBox.style.display = 'block';
+                btn.disabled = false;
+                btn.innerHTML = "MASUK";
+            }
+        }, 1500); // Simulasi delay server 1.5 detik
+    }
+
+    // --- NAVIGASI HALAMAN ---
+    function switchPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+    }
+
+    // --- LOGIKA KAMERA ---
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            document.getElementById('videoElement').srcObject = stream;
+        } catch (e) {
+            alert("Gagal akses kamera: " + e.message);
+        }
+    }
+
+    function doScan() {
+        const btn = document.getElementById('btnSnap');
+        const laser = document.querySelector('.laser');
+        const status = document.getElementById('statusText');
+        const frame = document.getElementById('frameBox');
+
+        btn.style.display = 'none'; // Sembunyikan tombol
+        laser.style.display = 'block'; // Nyalakan laser
+        status.innerText = "Memindai Wajah...";
+        
+        // Step 1: Scanning
+        setTimeout(() => {
+            status.innerText = "Verifikasi Biometrik...";
+            status.style.color = "#4ade80";
+        }, 2000);
+
+        // Step 2: Sukses
+        setTimeout(() => {
+            laser.style.display = 'none';
+            frame.style.borderColor = "#22c55e";
+            frame.style.boxShadow = "0 0 20px #22c55e";
+            status.innerHTML = "✅ WAJAH COCOK";
+            
+            // Set Waktu Absen Sekarang
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+            document.getElementById('clockInNow').innerText = timeStr;
+
+            // Masuk Dashboard
+            setTimeout(() => {
+                switchPage('dashboardPage');
+                generateHistory();
+            }, 1500);
+
+        }, 3500);
+    }
+
+    // --- GENERATOR DATA RIWAYAT (7 HARI) ---
+    function generateHistory() {
+        const list = document.getElementById('historyContainer');
+        list.innerHTML = "";
+        
+        const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+        const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+
+        for(let i=1; i<=7; i++) {
+            let d = new Date();
+            d.setDate(d.getDate() - i); // Mundur hari
+
+            let dayName = days[d.getDay()];
+            let tgl = d.getDate() + " " + months[d.getMonth()];
+
+            // Logika Jam (Masuk 07:xx, Keluar 17:xx)
+            let randMinIn = Math.floor(Math.random() * 59).toString().padStart(2,'0');
+            let randMinOut = Math.floor(Math.random() * 30).toString().padStart(2,'0');
+            
+            let htmlIsi = `
+                <div>IN: <span class="t-in">07:${randMinIn}</span></div>
+                <div>OUT: <span class="t-out">17:${randMinOut}</span></div>
+            `;
+
+            // Kalau Minggu = Libur
+            if(d.getDay() === 0) {
+                htmlIsi = `<div style="color:#ef4444; font-weight:bold;">LIBUR MINGGU</div>`;
+            }
+
+            let item = `
+                <div class="hist-item">
+                    <div>
+                        <div style="font-weight:bold; color:#333;">${dayName}, ${tgl}</div>
+                        <small style="color:#888;">Reguler</small>
+                    </div>
+                    <div style="text-align:right; font-size:0.9rem;">
+                        ${htmlIsi}
+                    </div>
+                </div>
+            `;
+            list.innerHTML += item;
+        }
+    }
+</script>
+
+</body>
+</html>
